@@ -48,7 +48,7 @@ RGBQUAD;
 
 /*画像生成用の配列*/
 unsigned char hologram[pixel];	//光強度用の配列
-unsigned char img[pixel];		//bmp用の配列
+//unsigned char img[pixel];		//bmp用の配列
 
 
 /*--------------------main関数--------------------*/
@@ -59,7 +59,7 @@ int main(){
 
 	/*ホスト側の変数*/
 	int i;					//物体点
-	float min=0.0F, max=0.0F, mid;	//2値化に用いる
+//	float min=0.0F, max=0.0F, mid;	//2値化に用いる
 	FILE *fp, *fp1;
 	int pls_x[points];			//~~データを読み込むことで初めてこの配列が定義できる~~
 	int pls_y[points];
@@ -115,15 +115,12 @@ int main(){
 		fread(&y_buf, sizeof(int), 1, fp);
 		fread(&z_buf, sizeof(int), 1, fp);
 
-		pls_x[i]=x_buf*40+width*0.5;	//物体点を離すために物体点座標に40を掛け，中心の座標を足す
-		pls_y[i]=y_buf*40+heigth*0.5;
-		pls_z[i]=1.0F/(((float)z_buf)*40+10000.0F);
+		pls_x[i]=x_buf*40+width/2;	//物体点を離すために物体点座標に40を掛け，中心の座標を足す
+		pls_y[i]=y_buf*40+heigth/2;
+		pls_z[i]=(float)z_buf*40+10000.0F;
 	}
 	fclose(fp);
 
-	for (i=0; i<pixel; i++) {
-		hologram[i]=0;
-	}
 
 	int mem_size_h = sizeof(unsigned char)*pixel;
 	int mem_size_o = sizeof(float)*points;
@@ -144,10 +141,10 @@ int main(){
 	size_t	source_size	= 0;
 
 	/*メモリオブジェクト（デバイス側で結果を格納する変数）*/
-	cl_mem	d_hologram	= NULL;
 	cl_mem	d_pls_x		= NULL;
 	cl_mem	d_pls_y		= NULL;
 	cl_mem	d_pls_z		= NULL;
+	cl_mem	d_hologram	= NULL;
 
 	/*カーネルオブジェクト*/
 	cl_kernel	holo_calculation	= NULL;
@@ -230,12 +227,12 @@ int main(){
 	/*ワークグループのサイズの定義*/
 	global_size[0]	= width;
 	global_size[1]	= heigth;
-	local_size[0]	= 32;
-	local_size[1]	= 32;
+	local_size[0]	= 128;
+	local_size[1]	= 2;
 
 	/*カーネル関数の実行*/
 	//カーネルを実行するための関数
-	//有効なコマンドキュー, カーネルオブジェクト, グローバルワークアイテム数とワークグループ内のワークアイテム数を決定する際の次元数, 現時点では必ずNULL, カーネル関数を実行するwork_dim次元のグローバルワークアイテムの数, カーネル関数を実行する各ワークグループを構成するワークアイテムの数, イベントオブジェクトの数, このコマンドが実行される前に完了していなければならないイベントを指定, この書き込みコマンドを識別するイベントオブジェクトが返される
+	//コマンドキュー, カーネルオブジェクト, グローバルワークアイテム数とワークグループ内のワークアイテム数を決定する際の次元数, 現時点では必ずNULL, カーネル関数を実行するwork_dim次元のグローバルワークアイテム(block)の数, カーネル関数を実行する各ワークグループを構成するワークアイテム(thread)の数, イベントオブジェクトの数, このコマンドが実行される前に完了していなければならないイベントを指定, この書き込みコマンドを識別するイベントオブジェクトが返される
 	clEnqueueNDRangeKernel(command_queue, holo_calculation, 2, NULL, global_size, local_size, 0, NULL, NULL);
 
 	/*デバイス側からホスト側へのデータ転送*/
@@ -259,7 +256,7 @@ int main(){
 
 
 	/*最大値，最小値を求める*/
-	for(i=0; i<pixel; i++){
+/*	for(i=0; i<pixel; i++){
 		if(min>hologram[i]){
 			min=hologram[i];
 		}
@@ -271,7 +268,7 @@ int main(){
 	printf("min=%lf, max=%lf, mid=%lf\n", min, max, mid);
 
 	/*各々の光強度配列の値を中間値と比較し，2値化する*/
-	for(i=0; i<pixel; i++){
+/*	for(i=0; i<pixel; i++){
 		if(hologram[i]<mid){
 			img[i]=0;
 		}
@@ -287,7 +284,7 @@ int main(){
 	fwrite(&bmpFh, sizeof(bmpFh), 1, fp1);	//(&bmpFh.bfType, sizeof(bmpFh.bfType), 1, fp);というように個別に書くことも可能
 	fwrite(&bmpIh, sizeof(bmpIh), 1, fp1);
 	fwrite(&rgbQ[0], sizeof(rgbQ[0]), 256, fp1);
-	fwrite(img, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
+	fwrite(hologram, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
 	printf("'fresnel-gpu.bmp' was saved.\n\n");
 	fclose(fp1);
 
