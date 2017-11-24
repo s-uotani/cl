@@ -48,7 +48,7 @@ RGBQUAD;
 
 /*画像生成用の配列*/
 float hologram[pixel];	//光強度用の配列
-//unsigned char img[pixel];		//bmp用の配列
+unsigned char img[pixel];		//bmp用の配列
 
 
 /*--------------------main関数--------------------*/
@@ -59,7 +59,7 @@ int main(){
 
 	/*ホスト側の変数*/
 	int i;					//物体点
-//	float min=0.0F, max=0.0F, mid;	//2値化に用いる
+	float min=0.0F, max=0.0F, mid;	//2値化に用いる
 	FILE *fp, *fp1;
 	int pls_x[points];			//~~データを読み込むことで初めてこの配列が定義できる~~
 	int pls_y[points];
