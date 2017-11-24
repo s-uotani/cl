@@ -7,6 +7,7 @@
 #define width 1024
 #define heigth 1024
 #define pixel width*heigth
+#define points 284
 
 /*--------------------BMPの構造体--------------------*/
 #pragma pack(push,1)
@@ -57,9 +58,13 @@ int main(){
 	RGBQUAD rgbQ[256];
 
 	/*ホスト側の変数*/
-	int i, points;					//物体点
+	int i;					//物体点
 	float min=0.0F, max=0.0F, mid;	//2値化に用いる
 	FILE *fp, *fp1;
+	int pls_x[points];			//~~データを読み込むことで初めてこの配列が定義できる~~
+	int pls_y[points];
+	float pls_z[points];
+	int x_buf, y_buf, z_buf;	//データを一時的に溜めておくための変数
 
 	/*BITMAPFILEHEADERの構造体*/
 	bmpFh.bfType		=19778;	//'B'=0x42,'M'=0x4d,'BM'=0x4d42=19778
@@ -91,7 +96,11 @@ int main(){
 
 	/*3Dファイルの読み込み*/
 	fp=fopen("cube284.3d","rb");		//バイナリで読み込み
-	fread(&points, sizeof(int), 1, fp);	//データのアドレス，サイズ，個数，ファイルポインタを指定
+	if (!fp) {
+		printf("error!\n");
+		exit(1);
+	}
+/*	fread(&points, sizeof(int), 1, fp);	//データのアドレス，サイズ，個数，ファイルポインタを指定
 	printf("the number of points is %d\n", points);
 
     //取り出した物体点を入れる配列
@@ -99,7 +108,7 @@ int main(){
 	int pls_y[points];
 	float pls_z[points];
 	int x_buf, y_buf, z_buf;	//データを一時的に溜めておくための変数
-
+*/
 	/*各バッファに物体点座標を取り込み，ホログラム面と物体点の位置を考慮したデータを各配列に入れる*/
 	for(i=0; i<points; i++){
 		fread(&x_buf, sizeof(int), 1, fp);
@@ -112,8 +121,13 @@ int main(){
 	}
 	fclose(fp);
 
+	for (i=0; i<pixel; i++) {
+		hologram[i]=0;
+	}
+
 	int mem_size_h = sizeof(unsigned char)*pixel;
 	int mem_size_o = sizeof(float)*points;
+
 /*--------------------OpenCL変数宣言--------------------*/
 	/*OpenCL変数*/
 	cl_device_id		device_id		= NULL;
@@ -190,10 +204,10 @@ int main(){
 	/*メモリオブジェクトの作成（デバイス側でのメモリの割り当て）*/
 	//デバイス上に作られるメモリ領域をホスト側で管理するためのオブジェクト
 	//OpenCLコンテキスト, バッファオブジェクトの確保に使用されるメモリ領域やバッファオブジェクトの使われ方を指定するビットフィールド, バッファオブジェクトのサイズをバイトで指定, アプリケーションが確保済みのバッファデータ, エラーコードを格納する変数
-	d_hologram	= clCreateBuffer(context, CL_MEM_READ_WRITE, mem_size_h, NULL, NULL);
 	d_pls_x		= clCreateBuffer(context, CL_MEM_READ_ONLY, mem_size_o, NULL, NULL);
 	d_pls_y		= clCreateBuffer(context, CL_MEM_READ_ONLY, mem_size_o, NULL, NULL);
 	d_pls_z		= clCreateBuffer(context, CL_MEM_READ_ONLY, mem_size_o, NULL, NULL);
+	d_hologram	= clCreateBuffer(context, CL_MEM_READ_WRITE, mem_size_h, NULL, NULL);
 /*--------------------------------------------------*/
 
 
@@ -216,8 +230,8 @@ int main(){
 	/*ワークグループのサイズの定義*/
 	global_size[0]	= width;
 	global_size[1]	= heigth;
-	local_size[0]	= 128;
-	local_size[1]	= 2;
+	local_size[0]	= 32;
+	local_size[1]	= 32;
 
 	/*カーネル関数の実行*/
 	//カーネルを実行するための関数
