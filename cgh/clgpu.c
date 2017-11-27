@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <math.h>
 #include <stdint.h>		//uint32_tは符号なしintで4バイトに指定
 #include <stdlib.h> 	//記憶域管理を使うため
 #include <CL/cl.h>
@@ -7,7 +6,17 @@
 #define width 1024
 #define heigth 1024
 #define pixel width*heigth
-#define points 284
+#define POINT_NUMBER 284
+#define PI 3.14159265F
+#define WAVELENGTH 0.633F
+
+/*画像生成用の配列*/
+unsigned char hologram[pixel];
+/*物体点座標用配列*/
+float pls_x[POINT_NUMBER];
+float pls_y[POINT_NUMBER];
+float pls_z[POINT_NUMBER];
+
 
 /*--------------------BMPの構造体--------------------*/
 #pragma pack(push,1)
@@ -23,14 +32,14 @@ BITMAPFILEHEADER;
 #pragma pack(pop)
 typedef struct tagBITMAPINFOHEADER {	//BITMAPINFOHEADERはbmpファイルの画像の情報の構造体で，サイズは40 byte
 	uint32_t		biSize;				//画像のサイズ
-	uint32_t		biWidth;			//横の画素数
-	uint32_t		biHeight;			//縦の画素数
+	int32_t			biWidth;			//横の画素数
+	int32_t			biHeight;			//縦の画素数
 	unsigned short	biPlanes;			//1
 	unsigned short	biBitCount;			//一画素あたりの色の数のbit数．今回は8
 	uint32_t		biCompression;		//圧縮タイプを表す．bmpは非圧縮なので0
 	uint32_t		biSizeImage;		//bmp配列のサイズを表す．biCompression=0なら基本的に0
-	uint32_t		biXPelsPerMeter;	//biXPelsPerMeterとbiYPelsPerMeterは基本的に0
-	uint32_t		biYPelsPerMeter;
+	int32_t			biXPelsPerMeter;	//biXPelsPerMeterとbiYPelsPerMeterは基本的に0
+	int32_t			biYPelsPerMeter;
 	uint32_t		biCirUsed;			//0
 	uint32_t		biCirImportant;		//0
 }
@@ -46,11 +55,6 @@ RGBQUAD;
 /*--------------------------------------------------*/
 
 
-/*画像生成用の配列*/
-float hologram[pixel];	//光強度用の配列
-unsigned char img[pixel];		//bmp用の配列
-
-
 /*--------------------main関数--------------------*/
 int main(){
 	BITMAPFILEHEADER bmpFh;
@@ -58,13 +62,11 @@ int main(){
 	RGBQUAD rgbQ[256];
 
 	/*ホスト側の変数*/
-	int i;					//物体点
-	float min=0.0F, max=0.0F, mid;	//2値化に用いる
+	int i;
+	int points;
+	int x_buf, y_buf, z_buf;		//データを一時的に溜めておくための変数
+	unsigned char min, max, mid;	//2値化に用いる
 	FILE *fp, *fp1;
-	int pls_x[points];			//~~データを読み込むことで初めてこの配列が定義できる~~
-	int pls_y[points];
-	float pls_z[points];
-	int x_buf, y_buf, z_buf;	//データを一時的に溜めておくための変数
 
 	/*BITMAPFILEHEADERの構造体*/
 	bmpFh.bfType		=19778;	//'B'=0x42,'M'=0x4d,'BM'=0x4d42=19778
@@ -100,9 +102,9 @@ int main(){
 		printf("error!\n");
 		exit(1);
 	}
-/*	fread(&points, sizeof(int), 1, fp);	//データのアドレス，サイズ，個数，ファイルポインタを指定
+	fread(&points, sizeof(int), 1, fp);	//データのアドレス，サイズ，個数，ファイルポインタを指定
 	printf("the number of points is %d\n", points);
-
+/*
     //取り出した物体点を入れる配列
 	int pls_x[points];			//~~データを読み込むことで初めてこの配列が定義できる~~
 	int pls_y[points];
@@ -115,15 +117,15 @@ int main(){
 		fread(&y_buf, sizeof(int), 1, fp);
 		fread(&z_buf, sizeof(int), 1, fp);
 
-		pls_x[i]=x_buf*40+width/2;	//物体点を離すために物体点座標に40を掛け，中心の座標を足す
-		pls_y[i]=y_buf*40+heigth/2;
-		pls_z[i]=(float)z_buf*40+10000.0F;
+		pls_x[i] = (float)x_buf*40+width/2;	//物体点を離すために物体点座標に40を掛け，中心の座標を足す
+		pls_y[i] = (float)y_buf*40+heigth/2;
+		pls_z[i] = PI/((float)z_buf*40*WAVELENGTH+10000.0F);
 	}
 	fclose(fp);
 
 
-	int mem_size_h = sizeof(float)*pixel;
-	int mem_size_o = sizeof(float)*points;
+	size_t mem_size_h = sizeof(unsigned char)*pixel;
+	size_t mem_size_o = sizeof(float)*points;
 
 /*--------------------OpenCL変数宣言--------------------*/
 	/*OpenCL変数*/
@@ -160,7 +162,7 @@ int main(){
 	/*デバイスの取得*/
 	//デバイスも固有のIDを持つため、使用できるデバイスのIDを取得する関数
 	//clGetPlatformIDs関数で取得したプラットフォームID, 利用したいデバイスの種類, 利用するデバイス数, cl_device_id型のハンドル(ポインタ), 第2引数で指定したデバイス数の戻り地
-	clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 1, &device_id, NULL);
+	clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
 
 	/*コンテキストの作成*/
 	//いくつかのデバイスやメモリをまとめて管理するためにコンテキスト環境を作成する関数
@@ -254,6 +256,8 @@ int main(){
 	clReleaseDevice(device_id);
 /*--------------------------------------------------*/
 
+	min = hologram[0];
+	max = hologram[0];
 
 	/*最大値，最小値を求める*/
 	for(i=0; i<pixel; i++){
@@ -264,28 +268,27 @@ int main(){
 			max=hologram[i];
 		}
 	}
-	mid=(min+max)*0.5F;	//中間値（閾値）を求める
-	printf("min=%lf, max=%lf, mid=%lf\n", min, max, mid);
-
+	mid=(min+max)/2;	//中間値（閾値）を求める
+	printf("max=%d\tmin=%d\tmid=%d\n", max, min, mid);
 	/*各々の光強度配列の値を中間値と比較し，2値化する*/
 	for(i=0; i<pixel; i++){
 		if(hologram[i]<mid){
-			img[i]=0;
+			hologram[i]=0;
 		}
 		else{
-			img[i]=255;
+			hologram[i]=255;
 		}
 	}
 
 	/*宣言したfpと使用するファイル名，その読み書きモードを設定．バイナリ(b)で書き込み(w)*/
-	fp1=fopen("fresnel-gpu.bmp","wb");
+	fp1=fopen("clgpu.bmp","wb");
 
 	/*書き込むデータのアドレス，データのサイズ，データの個数，ファイルのポインタを指定*/
 	fwrite(&bmpFh, sizeof(bmpFh), 1, fp1);	//(&bmpFh.bfType, sizeof(bmpFh.bfType), 1, fp);というように個別に書くことも可能
 	fwrite(&bmpIh, sizeof(bmpIh), 1, fp1);
 	fwrite(&rgbQ[0], sizeof(rgbQ[0]), 256, fp1);
-	fwrite(&img, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
-	printf("'fresnel-gpu.bmp' was saved.\n\n");
+	fwrite(hologram, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
+	printf("'clgpu.bmp' was saved.\n\n");
 	fclose(fp1);
 
 	return 0;
