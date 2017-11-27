@@ -176,7 +176,7 @@ int main(){
 
 	/*ソースコードの読み込み*/
 	//OpenCLではカーネルソースに記載されてるカーネル関数群をプログラムオブジェクトという単位で管理する
-	fp = fopen("holo_calculation_OpenCL.cl", "r");
+	fp = fopen("phase_OpenCL.cl", "r");
 	if (!fp) {
 		printf("error!\n");
 		exit(1);
@@ -198,7 +198,7 @@ int main(){
 	/*カーネルオブジェクトの作成*/
 	//カーネルオブジェクトを作成する関数
 	//プログラムオブジェクト, カーネルオブジェクト化するカーネル関数名, エラーコードを格納する変数
-	holo_calculation = clCreateKernel(program, "holo_calculation_OpenCL", NULL);
+	holo_calculation = clCreateKernel(program, "phase_OpenCL", NULL);
 
 	/*メモリオブジェクトの作成（デバイス側でのメモリの割り当て）*/
 	//デバイス上に作られるメモリ領域をホスト側で管理するためのオブジェクト
@@ -281,14 +281,14 @@ int main(){
 	}
 
 	/*宣言したfpと使用するファイル名，その読み書きモードを設定．バイナリ(b)で書き込み(w)*/
-	fp1=fopen("clgpu.bmp","wb");
+	fp1=fopen("phase_clgpu.bmp","wb");
 
 	/*書き込むデータのアドレス，データのサイズ，データの個数，ファイルのポインタを指定*/
 	fwrite(&bmpFh, sizeof(bmpFh), 1, fp1);	//(&bmpFh.bfType, sizeof(bmpFh.bfType), 1, fp);というように個別に書くことも可能
 	fwrite(&bmpIh, sizeof(bmpIh), 1, fp1);
 	fwrite(&rgbQ[0], sizeof(rgbQ[0]), 256, fp1);
 	fwrite(hologram, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
-	printf("'clgpu.bmp' was saved.\n\n");
+	printf("'phase_clgpu.bmp' was saved.\n\n");
 	fclose(fp1);
 
 	return 0;

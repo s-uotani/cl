@@ -5,8 +5,8 @@
 #define NORM_CONST 40.5845105F
 #define SAMPLING_INTERVAL 10.5F
 
-/*フレネル近似のカーネル関数*/
-__kernel void holo_calculation_OpenCL(__global float *o_x, __global float *o_y, __global float *o_z, __global unsigned char *h) {
+/*位相シフトのカーネル関数*/
+__kernel void phase_OpenCL(__global float *o_x, __global float *o_y, __global float *o_z, __global unsigned char *h) {
 	//ホログラム面上の座標Hx,Hyを組み込み変数により定義
 	int x   = get_global_id(0);
 	int y   = get_global_id(1);
