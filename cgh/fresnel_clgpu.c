@@ -7,11 +7,10 @@
 #define heigth 2048
 #define pixel width*heigth
 #define POINT_NUMBER 284
-#define PI 3.14159265F
-#define WAVELENGTH 0.633F
 
 /*画像生成用の配列*/
-unsigned char hologram[pixel];
+float hologram[pixel];
+unsigned char img[pixel];
 /*物体点座標用配列*/
 float pls_x[POINT_NUMBER];
 float pls_y[POINT_NUMBER];
@@ -64,8 +63,8 @@ int main(){
 	/*ホスト側の変数*/
 	int i;
 	int points;
-	int x_buf, y_buf, z_buf;		//データを一時的に溜めておくための変数
-	unsigned char min, max, mid;	//2値化に用いる
+	int x_buf, y_buf, z_buf;	//データを一時的に溜めておくための変数
+	float min, max, mid;		//2値化に用いる
 	FILE *fp, *fp1;
 
 	/*BITMAPFILEHEADERの構造体*/
@@ -119,12 +118,12 @@ int main(){
 
 		pls_x[i] = (float)x_buf*40+width/2;	//物体点を離すために物体点座標に40を掛け，中心の座標を足す
 		pls_y[i] = (float)y_buf*40+heigth/2;
-		pls_z[i] = PI/((float)z_buf*40*WAVELENGTH+10000.0F);
+		pls_z[i] = 1.0F/((float)z_buf*40+10000.0F);
 	}
 	fclose(fp);
 
 
-	size_t mem_size_h = sizeof(unsigned char)*pixel;
+	size_t mem_size_h = sizeof(float)*pixel;
 	size_t mem_size_o = sizeof(float)*points;
 
 	/*--------------------OpenCL変数宣言--------------------*/
@@ -176,7 +175,7 @@ int main(){
 
 	/*ソースコードの読み込み*/
 	//OpenCLではカーネルソースに記載されてるカーネル関数群をプログラムオブジェクトという単位で管理する
-	fp = fopen("holo_calculation_OpenCL.cl", "r");
+	fp = fopen("fresnel_OpenCL.cl", "r");
 	if (!fp) {
 		printf("error!\n");
 		exit(1);
@@ -198,7 +197,7 @@ int main(){
 	/*カーネルオブジェクトの作成*/
 	//カーネルオブジェクトを作成する関数
 	//プログラムオブジェクト, カーネルオブジェクト化するカーネル関数名, エラーコードを格納する変数
-	holo_calculation = clCreateKernel(program, "holo_calculation_OpenCL", NULL);
+	holo_calculation = clCreateKernel(program, "fresnel_OpenCL", NULL);
 
 	/*メモリオブジェクトの作成（デバイス側でのメモリの割り当て）*/
 	//デバイス上に作られるメモリ領域をホスト側で管理するためのオブジェクト
@@ -269,26 +268,26 @@ int main(){
 		}
 	}
 	mid=(min+max)/2;	//中間値（閾値）を求める
-	printf("max=%d\tmin=%d\tmid=%d\n", max, min, mid);
+	printf("max=%lf\tmin=%lf\tmid=%lf\n", max, min, mid);
 	/*各々の光強度配列の値を中間値と比較し，2値化する*/
 	for(i=0; i<pixel; i++){
 		if(hologram[i]<mid){
-			hologram[i]=0;
+			img[i]=0;
 		}
 		else{
-			hologram[i]=255;
+			img[i]=255;
 		}
 	}
 
 	/*宣言したfpと使用するファイル名，その読み書きモードを設定．バイナリ(b)で書き込み(w)*/
-	fp1=fopen("clgpu.bmp","wb");
+	fp1=fopen("fresnel_clgpu.bmp","wb");
 
 	/*書き込むデータのアドレス，データのサイズ，データの個数，ファイルのポインタを指定*/
 	fwrite(&bmpFh, sizeof(bmpFh), 1, fp1);	//(&bmpFh.bfType, sizeof(bmpFh.bfType), 1, fp);というように個別に書くことも可能
 	fwrite(&bmpIh, sizeof(bmpIh), 1, fp1);
 	fwrite(&rgbQ[0], sizeof(rgbQ[0]), 256, fp1);
-	fwrite(hologram, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
-	printf("'clgpu.bmp' was saved.\n\n");
+	fwrite(img, sizeof(unsigned char), pixel, fp1);	//bmpに書き込み
+	printf("'fresnel_clgpu.bmp' was saved.\n\n");
 	fclose(fp1);
 
 	return 0;
