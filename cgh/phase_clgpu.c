@@ -101,8 +101,8 @@ int main() {
 	cl_device_id		device_id		= NULL;
 	cl_context			context			= NULL;
 	cl_command_queue	command_queue	= NULL;
-	cl_program			program			= NULL;
-	cl_kernel			kernel			= NULL;
+	cl_program			program			= NULL;	//プログラムオブジェクト
+	cl_kernel			kernel			= NULL;	//カーネルオブジェクト
 	cl_platform_id		platform_id		= NULL;
 	//時間計測用変数
 	cl_int		status;
@@ -121,9 +121,6 @@ int main() {
 	cl_mem	d_pls_y		= NULL;
 	cl_mem	d_pls_z		= NULL;
 	cl_mem	d_hologram	= NULL;
-
-	//カーネルオブジェクト
-	cl_kernel	holo_calculation	= NULL;
 	/*--------------------------------------------------*/
 
 
@@ -311,7 +308,7 @@ int main() {
 	clReleaseMemObject(d_pls_y);
 	clReleaseMemObject(d_pls_z);
 	clReleaseMemObject(d_hologram);
-	clReleaseKernel(holo_calculation);
+	clReleaseKernel(kernel);
 	clReleaseDevice(device_id);
 	/*--------------------------------------------------*/
 

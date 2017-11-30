@@ -1,5 +1,5 @@
-#define width 2048
-#define heigth 2048
+#define width 1024
+#define heigth 1024
 #define points 284
 #define PI 3.14159265F
 #define SAMPLING_INTERVAL 10.5F			//画素間隔
