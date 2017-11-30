@@ -1,5 +1,5 @@
-#define width 2048
-#define heigth 2048
+#define width 1024
+#define heigth 1024
 #define points 284
 #define PI2 6.28318530F
 #define NORM_CONST 40.5845105F
