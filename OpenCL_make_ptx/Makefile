@@ -5,3 +5,4 @@ make_ptx: make_ptx.c
 
 clean:
 	rm make_ptx.out
+	rm cl_kernel.ptx

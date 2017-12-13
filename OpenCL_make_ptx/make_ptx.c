@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 {
 	// Loads add_vectors.cl
 	FILE* fp;
-	fp = fopen("fdtd_double_kernel1_18.cl", "r");   //読み込むカーネルソース名を指定
+	fp = fopen("fdtd_double_kernel2_18.cl", "r");   //読み込むカーネルソース名を指定
 	if (!fp) {
 		fprintf(stderr, "Error loading kernel.\n");
 		exit(1);
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 
 	// Create OpenCL kernel
-	cl_kernel kernel = clCreateKernel(program, "fdtd_double_kernel1_18", &err); //読み込んだカーネルソース名を指定
+	cl_kernel kernel = clCreateKernel(program, "fdtd_double_kernel2_18", &err); //読み込んだカーネルソース名を指定
 
 	// Query binary (PTX file) size
 	size_t bin_sz;
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	err = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(unsigned char *), &bin, NULL);
 
 	// Save PTX to add_vectors_ocl.ptx
-	fp = fopen("fdtd_double_kernel1_18.ptx", "wb"); //保存するptxファイル名を指定
+	fp = fopen("cl_kernel.ptx", "wb"); //保存するptxファイル名を指定
 	fwrite(bin, sizeof(char), bin_sz, fp);
 	fclose(fp);
 	free(bin);
