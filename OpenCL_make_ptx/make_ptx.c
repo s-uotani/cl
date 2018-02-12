@@ -5,7 +5,7 @@
 
 int main(int argc, char* argv[])
 {
-	// Loads add_vectors.cl
+	// Loads XXXXXXXX.cl
 	FILE* fp;
 	fp = fopen("fdtd_double_kernel2_18.cl", "r");   //読み込むカーネルソース名を指定
 	if (!fp) {
