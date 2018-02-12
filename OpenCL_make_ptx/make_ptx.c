@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 	// Create OpenCL command queue
 	cl_command_queue command_queue = clCreateCommandQueue(context, device, 0, &err);
 
-	// Create OpenCL program for add_vectors.cl
+	// Create OpenCL program for XXXXXXXX.cl
 	cl_program program = clCreateProgramWithSource(context, 1, (const char **)&kernel_str, (const size_t *)&kernel_sz, &err);
 
 	// Build OpenCL program
@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	unsigned char *bin = (unsigned char *)malloc(bin_sz);
 	err = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(unsigned char *), &bin, NULL);
 
-	// Save PTX to add_vectors_ocl.ptx
+	// Save PTX to XXXXXXXX.ptx
 	fp = fopen("cl_kernel.ptx", "wb"); //保存するptxファイル名を指定
 	fwrite(bin, sizeof(char), bin_sz, fp);
 	fclose(fp);
