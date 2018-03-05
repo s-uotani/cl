@@ -8,7 +8,7 @@ double gettimeofday_sec(){
 }
 
 int main(void){
-    double stert, end;
+    double start, end;
     start=gettimeofday_sec();
     /*処理*/
     end=gettimeofday_sec();
